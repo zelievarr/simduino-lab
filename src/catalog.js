@@ -67,3 +67,10 @@ export const catalog = [
 ];
 export const byId = Object.fromEntries(catalog.map(p=>[p.id,p]));
 export const groups = ['Все','Базовые','Платы','Свет','Ввод','Датчики','Дисплеи','Звук и моторы','Логика','Связь'];
+export const catalogIcons = {
+ tiny:'microchip', 'esp32-s2':'wifi', 'esp32-s3':'bluetooth', 'esp32-c3':'radio', 'esp32-c5':'wifi', 'esp32-c6':'radio-tower', 'esp32-c61':'microchip', 'esp32-h2':'bluetooth', 'esp32-p4':'circuit-board', 'esp32-s31':'cpu',
+ stm32c031:'microchip', stm32l031:'circuit-board', stm32f103c8:'cpu', 'raspberry-pi-pico':'circuit-board',
+ ds18:'thermometer',bmp:'gauge',rfid:'scan-line',strip:'ellipsis',meter:'activity',nlsf:'git-branch',nokia:'smartphone',touch:'touchpad',sh1107:'monitor',max7219:'grid-3x3',tm1637:'binary',epaper:'tablet',pal:'tv',a4988:'settings-2',
+ not:'chevrons-left-right',and:'merge',or:'split',xor:'shuffle',nand:'git-pull-request-arrow',mux:'list-filter','flip-flop-d':'repeat-2','flip-flop-dsr':'repeat','74hc595':'arrow-right-to-line','74hc165':'arrow-left-to-line',clock:'activity',relay:'toggle-right',breadboard:'grip',analyzer:'chart-no-axes-combined',text:'type'
+};
+export const catalogOrder=['uno','nano','mega','esp32','led','resistor','button','pot','ultrasonic','dht','lcd','oled','buzzer','servo','rgb','switch'];
