@@ -1,0 +1,24 @@
+{
+  "name": "volt-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@codemirror/commands": "6.8.1",
+    "@codemirror/lang-cpp": "6.0.3",
+    "@codemirror/language": "6.11.3",
+    "@codemirror/state": "6.5.2",
+    "@codemirror/view": "6.38.6",
+    "@lezer/highlight": "1.2.3",
+    "@wokwi/elements": "1.9.2",
+    "avr8js": "0.21.0",
+    "lucide": "0.468.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}

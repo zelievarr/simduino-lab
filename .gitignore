@@ -1,0 +1,6 @@
+node_modules/
+.tools/
+.build/
+.sites-runtime/
+.DS_Store
+.pnpm-store/
