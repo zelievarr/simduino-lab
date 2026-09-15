@@ -34,7 +34,7 @@ export function startServer(){
     if(req.headers.origin&&new URL(req.headers.origin).host!==req.headers.host)return json(403,{error:'Запускайте код на странице этого сервера.'});
     if(!req.headers['content-type']?.startsWith('application/json'))return json(415,{error:'Ожидается JSON.'});
     let body='';for await(const chunk of req){body+=chunk;if(body.length>110000)return json(413,{error:'Скетч слишком большой.'});}
-    const input=JSON.parse(body);try{return json(200,await compile(input.code));}catch(e){return json(422,{error:e.message.replaceAll(root,'[VOLT]')});}
+    const input=JSON.parse(body);try{return json(200,await compile(input.code));}catch(e){return json(422,{error:e.message.replaceAll(root,'[SIMduino lab]')});}
    }
    if(req.method!=='GET'&&req.method!=='HEAD')return json(405,{error:'Метод не поддерживается.'});
    const filename=path.resolve(root,'dist','.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));
@@ -43,6 +43,6 @@ export function startServer(){
    res.writeHead(200,{'Content-Type':types[path.extname(filename)]||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'});res.end(req.method==='HEAD'?undefined:data);
   }catch(e){json(e.code==='ENOENT'?404:500,{error:e.code==='ENOENT'?'Файл не найден.':'Не удалось обработать запрос.'});}
  });
- server.listen(Number(process.env.PORT)||4173,process.env.HOST||'127.0.0.1',()=>console.log(`VOLT ready at http://${process.env.HOST||'127.0.0.1'}:${Number(process.env.PORT)||4173}`));return server;
+ server.listen(Number(process.env.PORT)||4173,process.env.HOST||'127.0.0.1',()=>console.log(`SIMduino lab ready at http://${process.env.HOST||'127.0.0.1'}:${Number(process.env.PORT)||4173}`));return server;
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))startServer();

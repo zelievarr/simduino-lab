@@ -14,4 +14,4 @@ for(const dir of await readdir('node_modules/.pnpm',{withFileTypes:true})){
  }
 }
 await writeFile('dist/THIRD-PARTY-LICENSES.txt', notices.join('\n\n'));
-console.log('VOLT built → dist/');
+console.log('SIMduino lab built → dist/');
