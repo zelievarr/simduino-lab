@@ -1,5 +1,6 @@
 // The ambient light follows actual LED outputs from the AVR worker.
-const layer=document.createElement('div');layer.className='led-ambient';layer.setAttribute('aria-hidden','true');document.body.append(layer);
+const layer=document.createElement('div');layer.className='led-ambient';layer.setAttribute('aria-hidden','true');
+export function mountAmbient(){document.querySelector('#canvas')?.append(layer);}
 const colorCache=new Map();const parser=document.createElement('canvas').getContext('2d',{willReadFrequently:true});
 let previous='',lastUpdate=0;
 function colorRGB(color){

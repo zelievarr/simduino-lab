@@ -8,7 +8,7 @@ import {tags} from '@lezer/highlight';
 import {createIcons,icons} from 'lucide';
 import {catalog,byId,groups,catalogIcons,catalogOrder} from './catalog.js';
 import {showCompileError,launchFireworks,dismissError} from './effects.js';
-import {updateAmbient,clearAmbient} from './ambient.js';
+import {updateAmbient,clearAmbient,mountAmbient} from './ambient.js';
 import {examples,makeProject} from './examples.js';
 import {validateCircuit,loadHex} from './circuit.js';
 
@@ -172,7 +172,7 @@ $('#serial-form').onsubmit=e=>{e.preventDefault();const text=$('#serial-input').
 $('#file-input').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>500000)throw Error('Проект должен быть меньше 500 КБ.');const imported=JSON.parse(await file.text());validateProject(imported);rememberProject();stop();project=imported;selected=null;hexFile=null;undos=[];redos=[];inputs={};editor.dispatch({changes:{from:0,to:editor.state.doc.length,insert:project.code}});await renderParts();fit();saveSoon();closeDialog();toast('Проект открыт',file.name);}catch(e){toast('Ошибка открытия',e.message,'error');}finally{$('#file-input').value='';}};
 $('#hex-input').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;if(file.size>200000)throw Error('Файл HEX слишком большой.');const data=await file.text();loadHex(data);stop();hexFile=data;$('#compiler-label').textContent='Прошивка HEX';toast('Прошивка загружена','При запуске будет выполнен HEX, а не код редактора.','info');}catch(e){toast('Ошибка прошивки',e.message,'error');}finally{$('#hex-input').value='';}};
 document.addEventListener('keydown',e=>{const editing=e.composedPath().some(el=>el.tagName==='INPUT'||el.tagName==='TEXTAREA'||el.isContentEditable);if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.preventDefault();run();}if((e.metaKey||e.ctrlKey)&&e.key==='s'){e.preventDefault();saveProject();}if(e.key==='Escape'){cancelWire();selectPart(null);}if($('#modal').open||editing)return;if(e.key==='/'){e.preventDefault();$('#search').focus();}if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();actions.delete();}if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?actions.redo():actions.undo();}if(selected&&e.key.startsWith('Arrow')&&!running){e.preventDefault();checkpoint();const p=project.parts.find(p=>p.id===selected),d=e.shiftKey?10:2;p.x+=e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0;p.y+=e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0;renderParts();saveSoon();}});
-renderCatalog();await renderParts();fit();updateSound();refreshIcons();
+mountAmbient();renderCatalog();await renderParts();fit();updateSound();refreshIcons();
 let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{fit();fitCatalog();editor.requestMeasure();},150);});
 try{const r=await fetch('/api/health',{signal:AbortSignal.timeout(2500)});if(r.ok)compiler=!!(await r.json()).compiler;}catch{}
 $('#compiler-label').innerHTML=compiler?'<span class="compiler-dot"></span>Компилятор подключён':'Готовые примеры + HEX';
