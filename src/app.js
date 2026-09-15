@@ -48,6 +48,7 @@ function setBuzz(id,f){if(!sound||!running||paused||f<20||f>20000){if(buzzers[id
 function silent(){for(const id in buzzers)setBuzz(id,0);}
 function checkpoint(){undos.push(JSON.stringify({parts:project.parts,wires:project.wires}));if(undos.length>50)undos.shift();redos=[];}
 function saveSoon(){clearTimeout(autosaveTimer);$('#saved').textContent='Сохраняем…';autosaveTimer=setTimeout(()=>{try{localStorage.setItem('volt.current',JSON.stringify(project));$('#saved').textContent='Сохранено на устройстве';}catch{$('#saved').textContent='Не удалось сохранить';}},450);}
+window.addEventListener('pagehide',()=>{try{localStorage.setItem('volt.current',JSON.stringify(project));}catch{}});
 function refreshMeta(){$('#project-name').innerHTML=`${esc(project.name)} ${icon('chevron-down')}`;$('.canvas-caption h1').textContent=project.name;$('.canvas-caption p').textContent=examples.find(ex=>ex.code===project.code)?.desc||'Arduino Uno · ваша схема';$('#part-count').textContent=project.parts.length;$('#wire-count').textContent=`Соединений: ${project.wires.length}`;refreshIcons();}
 function renderCatalog(){
  const list=catalog.filter(p=>(!supportedOnly||p.ready)&&(group==='Все'||p.group===group)&&`${p.name} ${p.desc} ${p.tag}`.toLowerCase().includes(search.toLowerCase()));
