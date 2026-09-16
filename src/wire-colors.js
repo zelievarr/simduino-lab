@@ -13,3 +13,12 @@ export function automaticWireColor(from,to,signalIndex=0){
  if(roles.includes('power'))return'#ef4f55';
  return SIGNAL_WIRE_COLORS[Math.abs(signalIndex)%SIGNAL_WIRE_COLORS.length];
 }
+
+export function migrateLegacyWireColors(project){
+ for(const wire of project?.wires||[]){
+  const automatic=automaticWireColor(wire.from,wire.to);
+  if(wire.color==='#829399'&&automatic==='#111111')wire.color=automatic;
+  if(wire.color==='#ef7575'&&automatic==='#ef4f55')wire.color=automatic;
+ }
+ return project;
+}
