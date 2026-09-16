@@ -1,4 +1,4 @@
-const assets={klass:'/reactions/klass.png',angry:'/reactions/angry.png',wtf:'/reactions/wtf.png'};
+const assets={klass:'./reactions/klass.png',angry:'./reactions/angry.png',wtf:'./reactions/wtf.png'};
 let errorStreak=0,reactionTimer=null,reactionStage=null;
 
 export function reactionForOutcome(success,errorsBefore=0){
