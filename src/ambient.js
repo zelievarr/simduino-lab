@@ -1,6 +1,19 @@
 // The ambient light follows actual LED outputs from the AVR worker.
 const layer=document.createElement('div');layer.className='led-ambient';layer.setAttribute('aria-hidden','true');
-export function mountAmbient(){document.querySelector('#canvas')?.closest('.bench')?.append(layer);}
+for(const side of ['top','right','bottom','left']){const edge=document.createElement('i');edge.className=`led-ambient-edge is-${side}`;layer.append(edge);}
+let canvas,resizeObserver;
+function placeAmbient(){
+ if(!canvas?.isConnected)return;
+ const rect=canvas.getBoundingClientRect(),spread=innerWidth<=720?15:20;
+ layer.style.setProperty('--ambient-spread',`${spread}px`);
+ Object.assign(layer.style,{left:`${rect.left-spread}px`,top:`${rect.top-spread}px`,width:`${rect.width+spread*2}px`,height:`${rect.height+spread*2}px`,padding:`${spread}px`});
+}
+export function mountAmbient(){
+ canvas=document.querySelector('#canvas');if(!canvas)return;
+ document.body.append(layer);placeAmbient();
+ resizeObserver?.disconnect();resizeObserver=new ResizeObserver(placeAmbient);resizeObserver.observe(canvas);
+ addEventListener('resize',placeAmbient,{passive:true});addEventListener('scroll',placeAmbient,{passive:true,capture:true});
+}
 const colorCache=new Map();const parser=document.createElement('canvas').getContext('2d',{willReadFrequently:true});
 let previous='',lastUpdate=0;
 function colorRGB(color){
@@ -25,7 +38,7 @@ export function updateAmbient(outputs,parts){
  if(!total){if(previous!=='off'){layer.style.opacity='0';previous='off';}return;}
  const average=[red,green,blue].map(c=>Math.min(255,Math.round(c/total)));
  const colors=Object.fromEntries(Object.entries(sides).map(([side,value])=>[side,value.weight?value.rgb.map(c=>Math.min(255,Math.round(c/value.weight))):average]));
- const opacity=Math.min(.9,.16+Math.sqrt(peak)*.74).toFixed(2),signature=Object.values(colors).map(color=>color.join(' ')).join(':')+':'+opacity;
+ const opacity=Math.min(.56,.06+Math.sqrt(peak)*.5).toFixed(2),signature=Object.values(colors).map(color=>color.join(' ')).join(':')+':'+opacity;
  if(signature===previous)return;previous=signature;layer.style.setProperty('--ambient-color',average.join(' '));layer.style.opacity=opacity;
  for(const [side,color]of Object.entries(colors))layer.style.setProperty(`--ambient-${side}`,color.join(' '));
 }
