@@ -3,6 +3,8 @@ import { mkdir, copyFile, readFile, writeFile, readdir } from 'node:fs/promises'
 await mkdir('dist', { recursive: true });
 await build({ entryPoints: ['src/app.js','src/simulator.js'], bundle: true, format:'esm', outdir:'dist', minify:true, sourcemap:true, target:['es2022'] });
 for (const f of ['index.html','style.css','favicon.svg']) await copyFile(`src/${f}`, `dist/${f}`);
+await mkdir('dist/reactions',{recursive:true});
+for(const f of await readdir('src/reactions'))if(f.endsWith('.png'))await copyFile(`src/reactions/${f}`,`dist/reactions/${f}`);
 const notices=[];
 for(const dir of await readdir('node_modules/.pnpm',{withFileTypes:true})){
  if(!dir.isDirectory()||dir.name==='node_modules'||dir.name.startsWith('@esbuild')||dir.name.startsWith('esbuild'))continue;
