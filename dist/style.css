@@ -35,3 +35,9 @@
 
 /* Report-ready PNG capture buttons */
 .pane-tools .capture-btn{color:#bcd88d;background:#d1f76b0a;border:1px solid #64754955;margin-right:2px}.pane-tools .capture-btn:hover{color:var(--lime);background:#d1f76b17;border-color:#8eaa5c88}.pane-tools .capture-btn.saving svg{animation:camera-saving .8s ease-in-out infinite}.pane-tools .capture-btn:disabled{opacity:.65}@keyframes camera-saving{50%{transform:scale(.78);opacity:.45}}
+
+/* Larger launch warning for profanity in a sketch. */
+.profanity-overlay{background:radial-gradient(ellipse at center,#651b28df 0%,#13090dd9 72%);backdrop-filter:blur(8px)}.profanity-panel{width:min(1120px,94vw);max-width:none;padding:54px 42px;border-width:2px;box-shadow:0 24px 120px #000b,0 0 100px #ff40543b}.profanity-title{display:block;font-size:clamp(54px,8.5vw,128px);font-weight:900;line-height:.94;letter-spacing:-5px;color:#ff7f86;text-wrap:balance;text-shadow:0 4px 42px #ff405477}.profanity-panel p{font-size:17px;margin:28px auto 30px}.profanity-panel .error-return{font-size:15px;min-width:210px}@media(max-width:720px){.profanity-panel{padding:40px 20px}.profanity-title{font-size:clamp(45px,14vw,74px);letter-spacing:-2px}}
+
+/* Ctrl/Cmd drag marquee and persistent group bounds. */
+#selection-box{position:absolute;z-index:7;pointer-events:none;border:1px solid #d6ff69;background:#d1f76b1d;box-shadow:0 0 0 1px #18200f99,0 0 24px #ccef5f22;border-radius:4px}#group-frame{position:absolute;z-index:4;pointer-events:none;border:1px dashed #d1f76bc9;background:#d1f76b08;box-shadow:0 0 0 1px #151b10aa,0 0 22px #ccef5f16;border-radius:10px}.part.selected:before{border-style:solid;border-color:#d1f76bc9;background:#d1f76b08;box-shadow:0 0 16px #d1f76b19}.part.selected{filter:drop-shadow(0 0 8px #d1f76b18)}

@@ -21,6 +21,20 @@ export function showCompileError(message){
  errorTimer=setTimeout(dismissError,5500);
 }
 
+export function showProfanityWarning(){
+ dismissError();stopFireworks();
+ const overlay=document.createElement('div');overlay.id='compile-error-overlay';overlay.className='compile-error-overlay profanity-overlay';overlay.setAttribute('role','alert');
+ const panel=document.createElement('div');panel.className='compile-error-panel profanity-panel';
+ const label=document.createElement('span');label.className='error-eyebrow';label.textContent='ЗАПУСК ОСТАНОВЛЕН';
+ const title=document.createElement('strong');title.className='profanity-title';title.textContent='НЕ НАДО СКВЕРНОСЛОВИТЬ';
+ const detail=document.createElement('p');detail.textContent='Исправьте текст в скетче и запустите программу ещё раз.';
+ const button=document.createElement('button');button.className='button error-return';button.textContent='Хорошо, исправлю';button.onclick=dismissError;
+ panel.append(label,title,detail,button);overlay.append(panel);document.body.append(overlay);
+ if(!reduceMotion())document.querySelector('#app')?.classList.add('compile-shake');
+ shakeTimer=setTimeout(()=>document.querySelector('#app')?.classList.remove('compile-shake'),750);
+ errorTimer=setTimeout(dismissError,8000);
+}
+
 export function stopFireworks(){
  cancelAnimationFrame(celebrationFrame);celebrationCanvas?.remove();celebrationCanvas=null;
 }
