@@ -32,3 +32,6 @@
 @keyframes reaction-flash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
 @media(max-width:720px){.reaction-image{left:-13%;height:54%;max-width:78%}.reaction-angry .reaction-image,.reaction-wtf .reaction-image{height:56%}}
 @media(prefers-reduced-motion:reduce){.reaction-image{animation:reaction-fade 2.5s ease both!important}@keyframes reaction-fade{0%,100%{opacity:0}15%,82%{opacity:1}}}
+
+/* Report-ready PNG capture buttons */
+.pane-tools .capture-btn{color:#bcd88d;background:#d1f76b0a;border:1px solid #64754955;margin-right:2px}.pane-tools .capture-btn:hover{color:var(--lime);background:#d1f76b17;border-color:#8eaa5c88}.pane-tools .capture-btn.saving svg{animation:camera-saving .8s ease-in-out infinite}.pane-tools .capture-btn:disabled{opacity:.65}@keyframes camera-saving{50%{transform:scale(.78);opacity:.45}}
