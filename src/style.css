@@ -48,3 +48,5 @@
 
 /* New project remains reachable in the compact layout. */
 .new-project-button svg{width:16px;height:16px}@media(max-width:720px){.new-project-button{padding:8px!important}.new-project-button span{display:none}}
+
+.canvas:focus{outline:none}
