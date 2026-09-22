@@ -1,8 +1,17 @@
 import { build } from 'esbuild';
 import { mkdir, copyFile, readFile, writeFile, readdir, cp, rm } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 await mkdir('dist', { recursive: true });
 await build({ entryPoints: ['src/app.js','src/simulator.js'], bundle: true, format:'esm', outdir:'dist', minify:true, sourcemap:true, target:['es2022'] });
 for (const f of ['index.html','style.css','favicon.svg']) await copyFile(`src/${f}`, `dist/${f}`);
+const assetVersion=createHash('sha256')
+ .update(await readFile('dist/app.js'))
+ .update(await readFile('dist/style.css'))
+ .digest('hex').slice(0,12);
+const indexHtml=(await readFile('dist/index.html','utf8'))
+ .replace('./style.css',`./style.css?v=${assetVersion}`)
+ .replace('./app.js',`./app.js?v=${assetVersion}`);
+await writeFile('dist/index.html',indexHtml);
 await mkdir('dist/reactions',{recursive:true});
 for(const f of await readdir('src/reactions'))if(f.endsWith('.png'))await copyFile(`src/reactions/${f}`,`dist/reactions/${f}`);
 await rm('dist/avr',{recursive:true,force:true});
