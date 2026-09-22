@@ -1,7 +1,8 @@
 import {CPU,avrInstruction,AVRIOPort,AVRTimer,AVRUSART,AVRADC,AVREEPROM,EEPROMMemoryBackend,portBConfig,portCConfig,portDConfig,timer0Config,timer1Config,timer2Config,usart0Config,adcConfig} from 'avr8js';
 import {loadHex,buildNets} from './circuit.js';
+import {createSerialLineDecoder} from './serial-codec.js';
 let cpu,ports,adc,serial,project,net,inputs={},paused=false,timer,started,lastCycles=0,rx=[];
-let pins=Array(20).fill(0),integrals=Array(20).fill(0),edges=Array(20).fill(0),rise=Array(20).fill(0),width=Array(20).fill(0),period=Array(20).fill(0),line='';
+let pins=Array(20).fill(0),integrals=Array(20).fill(0),edges=Array(20).fill(0),rise=Array(20).fill(0),width=Array(20).fill(0),period=Array(20).fill(0);
 const locate=n=>n<8?[ports.d,n]:n<14?[ports.b,n-8]:[ports.c,n-14];
 const pinNumber=name=>/^\d+$/.test(name)?Number(name):/^A[0-5]/.test(name)?14+Number(name[1]):null;
 let pinNets=[],partNets={},gnd,vcc,v33;
@@ -54,7 +55,8 @@ self.onmessage=({data})=>{
   new AVREEPROM(cpu,new EEPROMMemoryBackend(1024));
   ports={b:new AVRIOPort(cpu,portBConfig),c:new AVRIOPort(cpu,portCConfig),d:new AVRIOPort(cpu,portDConfig)};
   adc=new AVRADC(cpu,adcConfig);serial=new AVRUSART(cpu,usart0Config,16000000);
-  serial.onByteTransmit=value=>{if(value===10){postMessage({type:'serial',line});line='';}else if(value!==13){line+=String.fromCharCode(value);if(line.length>=500){postMessage({type:'serial',line});line='';}}};
+  const decodeSerial=createSerialLineDecoder(line=>postMessage({type:'serial',line}));
+  serial.onByteTransmit=decodeSerial;
   ports.b.addListener(()=>track(8,6,ports.b));ports.c.addListener(()=>track(14,6,ports.c));ports.d.addListener(()=>track(0,8,ports.d));
   rebuild();started=performance.now();postMessage({type:'ready'});frame();
  }else if(data.type==='input'){inputs[data.id]=data.value;rebuild();}
