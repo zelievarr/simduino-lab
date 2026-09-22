@@ -20,6 +20,19 @@ function canvasBlob(canvas) {
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(Error('Не удалось создать PNG.')), 'image/png'));
 }
 
+async function saveAndCopyCanvas(canvas, filename) {
+  const blob = await canvasBlob(canvas);
+  downloadBlob(blob, filename);
+  let copied = false;
+  try {
+    if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+      await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
+      copied = true;
+    }
+  } catch {}
+  return {copied};
+}
+
 function addWatermark(ctx, width, height) {
   ctx.save();
   ctx.textAlign = 'right';
@@ -129,7 +142,7 @@ export async function captureCircuit(element, projectName) {
   const shade = ctx.createRadialGradient(rect.width / 2, rect.height / 2, Math.min(rect.width, rect.height) * .25, rect.width / 2, rect.height / 2, Math.max(rect.width, rect.height) * .72);
   shade.addColorStop(0, '#00000000');shade.addColorStop(1, '#10171a35');ctx.fillStyle = shade;ctx.fillRect(0, 0, rect.width, rect.height);
   addWatermark(ctx, rect.width, rect.height);
-  downloadBlob(await canvasBlob(canvas), captureFilename(projectName, 'scheme'));
+  return saveAndCopyCanvas(canvas, captureFilename(projectName, 'scheme'));
 }
 
 export function tokenizeCodeLine(line) {
@@ -182,5 +195,5 @@ export async function captureCode(code, projectName) {
     });
   });
   addWatermark(ctx, width, contentHeight);
-  downloadBlob(await canvasBlob(canvas), captureFilename(projectName, 'code'));
+  return saveAndCopyCanvas(canvas, captureFilename(projectName, 'code'));
 }

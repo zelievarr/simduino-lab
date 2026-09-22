@@ -45,3 +45,6 @@
 
 /* Ctrl/Cmd drag marquee and persistent group bounds. */
 #selection-box{position:absolute;z-index:7;pointer-events:none;border:1px solid #d6ff69;background:#d1f76b1d;box-shadow:0 0 0 1px #18200f99,0 0 24px #ccef5f22;border-radius:4px}#group-frame{position:absolute;z-index:4;pointer-events:none;border:1px dashed #d1f76bc9;background:#d1f76b08;box-shadow:0 0 0 1px #151b10aa,0 0 22px #ccef5f16;border-radius:10px}.part.selected:before{border-style:solid;border-color:#d1f76bc9;background:#d1f76b08;box-shadow:0 0 16px #d1f76b19}.part.selected{filter:drop-shadow(0 0 8px #d1f76b18)}
+
+/* New project remains reachable in the compact layout. */
+.new-project-button svg{width:16px;height:16px}@media(max-width:720px){.new-project-button{padding:8px!important}.new-project-button span{display:none}}

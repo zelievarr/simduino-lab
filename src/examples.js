@@ -13,3 +13,10 @@ export const examples = [
  {id:'servo',name:'Поворот на 180°',desc:'Сервопривод и импульсы управления.',level:'Моторы',icon:'rotate-cw',parts:[uno,{id:'sv',type:'servo',x:455,y:160,attrs:{}}],wires:[wire('uno:9','sv:PWM'),wire('uno:5V','sv:V+','#ef7575'),wire('uno:GND.2','sv:GND','#829399')],code:`// Управление сервоприводом без библиотек\nvoid setup() {\n  pinMode(9, OUTPUT);\n}\n\nvoid loop() {\n  for (int angle = 0; angle <= 180; angle += 2) {\n    int pulse = map(angle, 0, 180, 544, 2400);\n    digitalWrite(9, HIGH);\n    delayMicroseconds(pulse);\n    digitalWrite(9, LOW);\n    delay(20);\n  }\n}\n`}
 ];
 export const makeProject = (example=examples[0]) => structuredClone({version:1,name:example.name,code:example.code,parts:example.parts,wires:example.wires});
+export const makeBlankProject = (name='Новый проект') => structuredClone({
+ version:1,
+ name,
+ code:`// Новый проект SIMduino lab\n\nvoid setup() {\n  // Настройте пины здесь\n}\n\nvoid loop() {\n  // Основной код здесь\n}\n`,
+ parts:[uno],
+ wires:[]
+});
