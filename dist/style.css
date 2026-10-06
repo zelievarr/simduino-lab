@@ -50,3 +50,6 @@
 .new-project-button svg{width:16px;height:16px}@media(max-width:720px){.new-project-button{padding:8px!important}.new-project-button span{display:none}}
 
 .canvas:focus{outline:none}
+
+/* Pins stay clickable above wires; outlines and lane routing keep crossings readable. */
+#parts{z-index:3}.pin{width:18px;height:18px}.pin:before{width:6px;height:6px}.wire-outline{stroke:#171c1d;stroke-width:6;fill:none;stroke-linecap:round;stroke-linejoin:round;pointer-events:none;opacity:.88}.wire-hit{stroke-width:10}.wire-hit:hover~.wire-line{stroke-width:4;filter:drop-shadow(0 0 4px #d0ee6899)}
