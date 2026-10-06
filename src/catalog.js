@@ -11,6 +11,7 @@ export const catalog = [
  item('switch','Переключатель','Ввод','slide-switch','Два положения',true),
  item('button6','Кнопка 6 мм','Ввод','pushbutton-6mm','Моментальный контакт',true),
  item('slidepot','Слайдер','Ввод','slide-potentiometer','Аналоговый вход · 0–5 В',true),
+ item('tmp36','TMP36','Датчики','tmp36','Аналоговый датчик температуры · −40…125 °C',true),
  item('nano','Arduino Nano','Платы','arduino-nano','ATmega328P'),
  item('mega','Arduino Mega','Платы','arduino-mega','ATmega2560'),
  item('tiny','ATtiny85','Платы',null,'AVR · 8 бит'),
@@ -73,4 +74,4 @@ export const catalogIcons = {
  ds18:'thermometer',bmp:'gauge',rfid:'scan-line',strip:'ellipsis',meter:'activity',nlsf:'git-branch',nokia:'smartphone',touch:'touchpad',sh1107:'monitor',max7219:'grid-3x3',tm1637:'binary',epaper:'tablet',pal:'tv',a4988:'settings-2',
  not:'chevrons-left-right',and:'merge',or:'split',xor:'shuffle',nand:'git-pull-request-arrow',mux:'list-filter','flip-flop-d':'repeat-2','flip-flop-dsr':'repeat','74hc595':'arrow-right-to-line','74hc165':'arrow-left-to-line',clock:'activity',relay:'toggle-right',breadboard:'grip',analyzer:'chart-no-axes-combined',text:'type'
 };
-export const catalogOrder=['uno','nano','mega','esp32','led','resistor','button','pot','ultrasonic','dht','lcd','oled','buzzer','servo','rgb','switch'];
+export const catalogOrder=['uno','nano','mega','esp32','led','resistor','button','pot','tmp36','ultrasonic','dht','lcd','oled','buzzer','servo','rgb','switch'];

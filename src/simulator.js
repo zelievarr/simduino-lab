@@ -1,6 +1,7 @@
 import {CPU,avrInstruction,AVRIOPort,AVRTimer,AVRUSART,AVRADC,AVREEPROM,EEPROMMemoryBackend,portBConfig,portCConfig,portDConfig,timer0Config,timer1Config,timer2Config,usart0Config,adcConfig} from 'avr8js';
 import {loadHex,buildNets} from './circuit.js';
 import {createSerialLineDecoder} from './serial-codec.js';
+import {tmp36Voltage} from './tmp36-model.js';
 let cpu,ports,adc,serial,project,net,inputs={},paused=false,timer,started,lastCycles=0,rx=[];
 let pins=Array(20).fill(0),integrals=Array(20).fill(0),edges=Array(20).fill(0),rise=Array(20).fill(0),width=Array(20).fill(0),period=Array(20).fill(0);
 const locate=n=>n<8?[ports.d,n]:n<14?[ports.b,n-8]:[ports.c,n-14];
@@ -10,13 +11,14 @@ function rebuild(){
  net=buildNets(project.parts,project.wires,inputs);const uno=project.parts.find(p=>p.type==='uno').id;
  pinNets=Array.from({length:20},(_,i)=>net.root(`${uno}:${i<14?i:'A'+(i-14)}`));
  gnd=net.root(`${uno}:GND.1`);vcc=net.root(`${uno}:5V`);v33=net.root(`${uno}:3.3V`);
- partNets={};for(const p of project.parts)partNets[p.id]=Object.fromEntries(['A','C','R','G','B','COM','1','2','SIG','VCC','V+','GND','PWM'].map(pin=>[pin,net.root(`${p.id}:${pin}`)]));
+ partNets={};for(const p of project.parts)partNets[p.id]=Object.fromEntries(['A','C','R','G','B','COM','1','2','SIG','OUT','VCC','V+','GND','PWM'].map(pin=>[pin,net.root(`${p.id}:${pin}`)]));
  applyInputs();
 }
 function netVoltage(root,averages=null){
  if(root===gnd)return 0;if(root===vcc)return 5;if(root===v33)return 3.3;
  for(let i=0;i<20;i++)if(pinNets[i]===root){const [p,b]=locate(i),s=p.pinState(b);if(s<2)return (averages?averages[i]:pins[i])*5;}
  for(const part of project.parts){if(part.type==='pot'||part.type==='slidepot'){const p=partNets[part.id];if(p.SIG===root&&p.VCC===vcc&&p.GND===gnd)return (inputs[part.id]??part.attrs.value??512)/1023*5;}}
+ for(const part of project.parts){if(part.type==='tmp36'){const p=partNets[part.id];if(p.OUT===root&&p.VCC===vcc&&p.GND===gnd)return tmp36Voltage(inputs[part.id]??part.attrs.value??25);}}
  return null;
 }
 function applyInputs(){
