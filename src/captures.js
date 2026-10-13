@@ -115,11 +115,15 @@ export async function captureCircuit(element, projectName) {
   if (wireSvg && world) {
     const clean = wireSvg.cloneNode(true);
     clean.querySelectorAll('.wire-hit,title,#draft-wire').forEach(node => node.remove());
-    clean.querySelectorAll('.wire-line').forEach(path => {
+    // Exported SVG is detached from the page stylesheet. Both the coloured
+    // stroke and its dark outline must explicitly remain unfilled open paths.
+    clean.querySelectorAll('.wire-line,.wire-outline').forEach(path => {
       path.setAttribute('fill', 'none');
-      path.setAttribute('stroke-width', '2.5');
+      path.setAttribute('stroke', path.classList.contains('wire-outline') ? '#171c1d' : path.getAttribute('stroke'));
+      path.setAttribute('stroke-width', path.classList.contains('wire-outline') ? '6' : '2.5');
       path.setAttribute('stroke-linecap', 'round');
       path.setAttribute('stroke-linejoin', 'round');
+      if (path.classList.contains('wire-outline')) path.setAttribute('opacity', '.88');
     });
     const worldRect = world.getBoundingClientRect();
     await drawSvgElement(ctx, clean, worldRect.left - rect.left, worldRect.top - rect.top, worldRect.width, worldRect.height);
