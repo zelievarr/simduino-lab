@@ -1,30 +1,40 @@
 import {CPU,avrInstruction,AVRIOPort,AVRTimer,AVRUSART,AVRADC,AVREEPROM,EEPROMMemoryBackend,portBConfig,portCConfig,portDConfig,timer0Config,timer1Config,timer2Config,usart0Config,adcConfig} from 'avr8js';
 import {loadHex,buildNets} from './circuit.js';
 import {createSerialLineDecoder} from './serial-codec.js';
+import {logicTypes,logicVoltage} from './logic-model.js';
 import {tmp36Voltage} from './tmp36-model.js';
 let cpu,ports,adc,serial,project,net,inputs={},paused=false,timer,started,lastCycles=0,rx=[];
 let pins=Array(20).fill(0),integrals=Array(20).fill(0),edges=Array(20).fill(0),rise=Array(20).fill(0),width=Array(20).fill(0),period=Array(20).fill(0);
 const locate=n=>n<8?[ports.d,n]:n<14?[ports.b,n-8]:[ports.c,n-14];
 const pinNumber=name=>/^\d+$/.test(name)?Number(name):/^A[0-5]/.test(name)?14+Number(name[1]):null;
-let pinNets=[],partNets={},gnd,vcc,v33;
+let pinNets=[],partNets={},gnd,vcc,v33,applyingInputs=false;
+let logicParts=[];
 function rebuild(){
  net=buildNets(project.parts,project.wires,inputs);const uno=project.parts.find(p=>p.type==='uno').id;
  pinNets=Array.from({length:20},(_,i)=>net.root(`${uno}:${i<14?i:'A'+(i-14)}`));
  gnd=net.root(`${uno}:GND.1`);vcc=net.root(`${uno}:5V`);v33=net.root(`${uno}:3.3V`);
- partNets={};for(const p of project.parts)partNets[p.id]=Object.fromEntries(['A','C','R','G','B','COM','1','2','SIG','OUT','VCC','V+','GND','PWM'].map(pin=>[pin,net.root(`${p.id}:${pin}`)]));
+ logicParts=project.parts.filter(p=>logicTypes.includes(p.type));
+ partNets={};for(const p of project.parts)partNets[p.id]=Object.fromEntries(['A','C','R','G','B','COM','1','2','SIG','OUT','VCC','V+','GND','PWM','S','Y'].map(pin=>[pin,net.root(`${p.id}:${pin}`)]));
  applyInputs();
 }
-function netVoltage(root,averages=null){
+function netVoltage(root,averages=null,visiting=new Set(),cache=new Map()){
+ if(cache.has(root))return cache.get(root);
+ if(visiting.has(root))return null;
  if(root===gnd)return 0;if(root===vcc)return 5;if(root===v33)return 3.3;
  for(let i=0;i<20;i++)if(pinNets[i]===root){const [p,b]=locate(i),s=p.pinState(b);if(s<2)return (averages?averages[i]:pins[i])*5;}
  for(const part of project.parts){if(part.type==='pot'||part.type==='slidepot'){const p=partNets[part.id];if(p.SIG===root&&p.VCC===vcc&&p.GND===gnd)return (inputs[part.id]??part.attrs.value??512)/1023*5;}}
  for(const part of project.parts){if(part.type==='tmp36'){const p=partNets[part.id];if(p.OUT===root&&p.VCC===vcc&&p.GND===gnd)return tmp36Voltage(inputs[part.id]??part.attrs.value??25);}}
+ for(const part of logicParts){const p=partNets[part.id];if(p.Y===root){const next=new Set(visiting);next.add(root);const value=logicVoltage(part.type,pin=>netVoltage(p[pin],averages,next,cache));cache.set(root,value);return value;}}
+ for(let i=0;i<20;i++)if(pinNets[i]===root&&locate(i)[0].pinState(locate(i)[1])===3)return 5;
  return null;
 }
 function applyInputs(){
- if(!adc)return;
+ if(!adc||applyingInputs)return;
+ applyingInputs=true;
+ try{
  for(let i=0;i<20;i++){const[p,b]=locate(i);if(p.pinState(b)>=2){const v=netVoltage(pinNets[i]);p.setPin(b,v===null?p.pinState(b)===3:v>=2.5);}}
  for(let i=0;i<6;i++)adc.channelValues[i]=netVoltage(pinNets[i+14])??0;
+ }finally{applyingInputs=false;}
 }
 function track(base,count,port){
  for(let b=0;b<count;b++){const i=base+b,now=cpu.cycles,next=port.pinState(b)===1?1:0;
@@ -41,6 +51,7 @@ function frame(){
  integrals.fill(0);edges.fill(cpu.cycles);lastCycles=cpu.cycles;
  const outputs={};
  for(const part of project.parts){const p=partNets[part.id],volts=k=>netVoltage(p[k],avg);
+  if(logicTypes.includes(part.type))outputs[part.id]={logic:volts('Y')??0};
   if(part.type==='led')outputs[part.id]={brightness:Math.max(0,((volts('A')??0)-(volts('C')??5))/5)};
   if(part.type==='rgb')outputs[part.id]={rgb:['R','G','B'].map(c=>Math.max(0,((volts(c)??0)-(volts('COM')??5))/5))};
   if(part.type==='servo'){const i=pinNets.indexOf(p.PWM);outputs[part.id]={angle:p['V+']===vcc&&p.GND===gnd&&i>=0?Math.max(0,Math.min(180,(width[i]/16-544)/1856*180)):0};}

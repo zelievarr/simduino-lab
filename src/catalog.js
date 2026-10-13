@@ -1,3 +1,4 @@
+import {logicTypes} from './logic-model.js';
 const item = (id,name,group,tag,desc,ready=false) => ({id,name,group,tag,desc,ready});
 export const catalog = [
  item('uno','Arduino Uno','Платы','arduino-uno','ATmega328P · 16 MHz',true),
@@ -57,7 +58,8 @@ export const catalog = [
  item('biaxial','Двухосевой мотор','Звук и моторы','biaxial-stepper','Два шаговых двигателя'),
  item('ir','ИК-приёмник','Связь','ir-receiver','38 кГц'),
  item('remote','ИК-пульт','Связь','ir-remote','20 клавиш'),
- ...['NOT','AND','OR','XOR','NAND','MUX','Flip-Flop D','Flip-Flop DSR','74HC595','74HC165'].map(name=>item(name.toLowerCase().replaceAll(' ','-'),name,'Логика',null,'Цифровая логика')),
+ ...logicTypes.map(type=>item(type,type.toUpperCase(),'Логика',`sim-logic-${type}`,type==='mux'?'Мультиплексор 2 → 1 · A, B, S → Y':'Логический элемент · выход Y',true)),
+ ...['Flip-Flop D','Flip-Flop DSR','74HC595','74HC165'].map(name=>item(name.toLowerCase().replaceAll(' ','-'),name,'Логика',null,'Цифровая логика')),
  item('clock','Генератор частоты','Базовые',null,'Тактовый сигнал'),
  item('relay','Модуль реле','Базовые',null,'Управляемый контакт'),
  item('dpdt','DPDT-реле','Базовые','ks2e-m-dc5','Два переключающих контакта'),

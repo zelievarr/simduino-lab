@@ -16,3 +16,20 @@ test('TMP36 produces the correct analog voltage for its temperature',async()=>{c
 test('PWM duty cycle produces intermediate brightness',async()=>{const{frames}=await simulate('fade',1.2);assert.ok(frames.some(f=>f.outputs.led1.brightness>.15&&f.outputs.led1.brightness<.8));});
 test('servo pulses decode to a changing angle',async()=>{const{frames}=await simulate('servo',1);assert.ok(frames.at(-1).outputs.sv.angle>40);});
 test('tone is decoded into the requested frequencies',async()=>{const{frames}=await simulate('tone',.7);assert.ok(frames.some(f=>Math.abs(f.outputs.bz.frequency-523)<8));assert.ok(frames.some(f=>Math.abs(f.outputs.bz.frequency-784)<8));});
+test('MUX and cascaded gates carry real Arduino output to an LED',async()=>{
+ const{frames}=await simulate('blink',1.3,p=>{
+  p.parts.push({id:'mux1',type:'mux',attrs:{}},{id:'not1',type:'not',attrs:{}});
+  p.wires=p.wires.filter(w=>w.from!=='uno:13');
+  p.wires.push(...[['uno:13','mux1:B'],['uno:GND.1','mux1:A'],['uno:5V','mux1:S'],['mux1:Y','not1:A'],['not1:Y','r1:1']].map(([from,to])=>({from,to})));
+ });
+ assert.ok(frames.some(f=>f.outputs.mux1.logic===5&&f.outputs.not1.logic===0&&f.outputs.led1.brightness<.1));
+ assert.ok(frames.some(f=>f.seconds>1.1&&f.outputs.mux1.logic===0&&f.outputs.not1.logic===5&&f.outputs.led1.brightness>.9));
+});
+test('logic output drives Arduino digitalRead',async()=>{
+ const{lines}=await simulate('button',.4,p=>{
+  p.parts.push({id:'gate',type:'and',attrs:{}});
+  p.wires=p.wires.filter(w=>!w.from.startsWith('btn:'));
+  p.wires.push(...[['uno:5V','gate:A'],['uno:GND.1','gate:B'],['gate:Y','uno:2']].map(([from,to])=>({from,to})));
+ });
+ assert.ok(lines.includes('PRESSED'));
+});
