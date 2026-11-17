@@ -1,3 +1,4 @@
+import {bridgeTypes,bridgePins,bridgeOutput,motorSpeed} from './motor-model.js';
 import {CPU,avrInstruction,AVRIOPort,AVRTimer,AVRUSART,AVRADC,AVREEPROM,EEPROMMemoryBackend,portBConfig,portCConfig,portDConfig,timer0Config,timer1Config,timer2Config,usart0Config,adcConfig} from 'avr8js';
 import {loadHex,buildNets} from './circuit.js';
 import {createSerialLineDecoder} from './serial-codec.js';
@@ -8,25 +9,52 @@ let pins=Array(20).fill(0),integrals=Array(20).fill(0),edges=Array(20).fill(0),r
 const locate=n=>n<8?[ports.d,n]:n<14?[ports.b,n-8]:[ports.c,n-14];
 const pinNumber=name=>/^\d+$/.test(name)?Number(name):/^A[0-5]/.test(name)?14+Number(name[1]):null;
 let pinNets=[],partNets={},gnd,vcc,v33,applyingInputs=false;
-let logicParts=[];
+let logicParts=[],batteries=[],drivers=new Map();
 function rebuild(){
  net=buildNets(project.parts,project.wires,inputs);const uno=project.parts.find(p=>p.type==='uno').id;
  pinNets=Array.from({length:20},(_,i)=>net.root(`${uno}:${i<14?i:'A'+(i-14)}`));
  gnd=net.root(`${uno}:GND.1`);vcc=net.root(`${uno}:5V`);v33=net.root(`${uno}:3.3V`);
  logicParts=project.parts.filter(p=>logicTypes.includes(p.type));
- partNets={};for(const p of project.parts)partNets[p.id]=Object.fromEntries(['A','C','R','G','B','COM','1','2','SIG','OUT','VCC','V+','GND','PWM','S','Y'].map(pin=>[pin,net.root(`${p.id}:${pin}`)]));
+ partNets={};for(const p of project.parts)partNets[p.id]=Object.fromEntries(['A','C','R','G','B','COM','1','2','SIG','OUT','VCC','V+','GND','PWM','S','Y','+','-','E',...bridgePins].map(pin=>[pin,net.root(`${p.id}:${pin}`)]));
+ batteries=project.parts.filter(p=>p.type==='battery9').map(p=>partNets[p.id]);
+ drivers=new Map();
+ for(const part of project.parts){
+  const p=partNets[part.id];
+  if(part.type==='npn')drivers.set(p.C,{p});
+  if(bridgeTypes.includes(part.type))for(let channel=1;channel<=4;channel++)drivers.set(p[channel+'Y'],{p,channel});
+ }
  applyInputs();
 }
 function netVoltage(root,averages=null,visiting=new Set(),cache=new Map()){
  if(cache.has(root))return cache.get(root);
  if(visiting.has(root))return null;
  if(root===gnd)return 0;if(root===vcc)return 5;if(root===v33)return 3.3;
+ if(batteries.some(p=>p['V+']===root&&p.GND===gnd))return 9;
  for(let i=0;i<20;i++)if(pinNets[i]===root){const [p,b]=locate(i),s=p.pinState(b);if(s<2)return (averages?averages[i]:pins[i])*5;}
  for(const part of project.parts){if(part.type==='pot'||part.type==='slidepot'){const p=partNets[part.id];if(p.SIG===root&&p.VCC===vcc&&p.GND===gnd)return (inputs[part.id]??part.attrs.value??512)/1023*5;}}
  for(const part of project.parts){if(part.type==='tmp36'){const p=partNets[part.id];if(p.OUT===root&&p.VCC===vcc&&p.GND===gnd)return tmp36Voltage(inputs[part.id]??part.attrs.value??25);}}
  for(const part of logicParts){const p=partNets[part.id];if(p.Y===root){const next=new Set(visiting);next.add(root);const value=logicVoltage(part.type,pin=>netVoltage(p[pin],averages,next,cache));cache.set(root,value);return value;}}
+ if(drivers.has(root)){
+  const next=new Set(visiting);next.add(root);
+  return drivenTerminal(root,pin=>netVoltage(pin,averages,next,cache))?.voltage??null;
+ }
  for(let i=0;i<20;i++)if(pinNets[i]===root&&locate(i)[0].pinState(locate(i)[1])===3)return 5;
  return null;
+}
+function drivenTerminal(root,voltage){
+ const driver=drivers.get(root);
+ if(!driver)return null;
+ const {p,channel}=driver,read=key=>voltage(p[key]);
+ if(channel)return bridgeOutput(channel,read,p['GND.4']===gnd);
+ const base=read('B');
+ return p.E===gnd&&base>0?{voltage:0,duty:Math.min(1,base/5)}:null;
+}
+function motorTerminal(root,avg){
+ const voltage=pin=>netVoltage(pin,avg,new Set([root]));
+ const direct=root===gnd||root===vcc||root===v33||batteries.some(p=>p['V+']===root&&p.GND===gnd)||pinNets.some((r,i)=>r===root&&locate(i)[0].pinState(locate(i)[1])<2);
+ if(!direct&&drivers.has(root))return drivenTerminal(root,voltage);
+ const value=netVoltage(root,avg);
+ return value===null?null:{voltage:value,duty:1};
 }
 function applyInputs(){
  if(!adc||applyingInputs)return;
@@ -52,6 +80,7 @@ function frame(){
  const outputs={};
  for(const part of project.parts){const p=partNets[part.id],volts=k=>netVoltage(p[k],avg);
   if(logicTypes.includes(part.type))outputs[part.id]={logic:volts('Y')??0};
+  if(part.type==='dc-motor')outputs[part.id]={motorSpeed:motorSpeed(motorTerminal(p['+'],avg),motorTerminal(p['-'],avg))};
   if(part.type==='led')outputs[part.id]={brightness:Math.max(0,((volts('A')??0)-(volts('C')??5))/5)};
   if(part.type==='rgb')outputs[part.id]={rgb:['R','G','B'].map(c=>Math.max(0,((volts(c)??0)-(volts('COM')??5))/5))};
   if(part.type==='servo'){const i=pinNets.indexOf(p.PWM);outputs[part.id]={angle:p['V+']===vcc&&p.GND===gnd&&i>=0?Math.max(0,Math.min(180,(width[i]/16-544)/1856*180)):0};}

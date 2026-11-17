@@ -1,3 +1,4 @@
+import {breadboardGroups,bridgeTypes} from './motor-model.js';
 // Connectivity, not an analog SPICE solver. Resistors carry digital signals.
 export function buildNets(parts,wires,inputs={}) {
  const parent = new Map();
@@ -7,6 +8,8 @@ export function buildNets(parts,wires,inputs={}) {
  for(const p of parts){
    const j=(a,b)=>join(`${p.id}:${a}`,`${p.id}:${b}`);
    if(p.type==='uno'){j('GND.1','GND.2');j('GND.1','GND.3');j('A4','A4.2');j('A5','A5.2');}
+   if(p.type==='breadboard')for(const [first,...rest] of breadboardGroups())for(const pin of rest)j(first,pin);
+   if(bridgeTypes.includes(p.type))for(const pin of ['GND.5','GND.12','GND.13'])j('GND.4',pin);
    if(p.type==='resistor')j('1','2');
    if(p.type==='button'||p.type==='button6'){j('1.l','1.r');j('2.l','2.r');if(inputs[p.id])j('1.l','2.l');}
    if(p.type==='switch')j('2',inputs[p.id]?'3':'1');
@@ -19,6 +22,9 @@ export function validateCircuit(project) {
  // Check direct shorts separately: a resistor is not a short circuit.
  const nets=buildNets(project.parts.filter(p=>p.type!=='resistor'),project.wires);
  if(nets.same(`${uno}:5V`,`${uno}:GND.1`)||nets.same(`${uno}:3.3V`,`${uno}:GND.1`))throw Error('Короткое замыкание: питание соединено с GND. Удалите этот провод перед запуском.');
+ for(const p of project.parts.filter(p=>p.type==='battery9')){
+  if(nets.same(p.id+':V+',p.id+':GND')||['5V','3.3V','GND.1'].some(pin=>nets.same(p.id+':V+',uno+':'+pin)))throw Error('Батарея 9 В: проверьте полярность и изолируйте плюс от шин Arduino.');
+ }
  const warnings=[];
  for(const p of project.parts.filter(p=>p.type==='led')){
   if(!project.wires.some(w=>w.from===`${p.id}:A`||w.to===`${p.id}:A`)||!project.wires.some(w=>w.from===`${p.id}:C`||w.to===`${p.id}:C`))warnings.push(`${p.id}: подключите оба вывода светодиода.`);

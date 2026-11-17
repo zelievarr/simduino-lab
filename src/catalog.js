@@ -63,7 +63,14 @@ export const catalog = [
  item('clock','Генератор частоты','Базовые',null,'Тактовый сигнал'),
  item('relay','Модуль реле','Базовые',null,'Управляемый контакт'),
  item('dpdt','DPDT-реле','Базовые','ks2e-m-dc5','Два переключающих контакта'),
- item('breadboard','Макетная плата','Базовые',null,'Полная, половинная и мини'),
+ item('breadboard','Макетная плата','Базовые','sim-breadboard','30 колонок · соединённые шины',true),
+ item('battery9','Батарея 9 В','Базовые','sim-battery9','Внешний источник питания',true),
+ item('npn','Транзистор NPN','Базовые','sim-npn','Ключ низкой стороны · C, B, E',true),
+ item('diode','Диод 1N4004','Базовые','sim-diode','Защита двигателя · анод A, катод K',true),
+ item('capacitor','Конденсатор 1 мкФ','Базовые','sim-capacitor','Фильтр помех двигателя',true),
+ item('dc-motor','Двигатель постоянного тока','Звук и моторы','sim-dc-motor','DC мотор · скорость и направление',true),
+ item('sn754410','SN754410 · H-мост','Звук и моторы','sim-sn754410','Два двигателя · DIP-16',true),
+ item('l293d','L293D · H-мост','Звук и моторы','sim-l293d','Аналог SN754410 · DIP-16',true),
  item('analyzer','Логический анализатор','Базовые',null,'8 цифровых каналов'),
  item('sd','microSD','Связь','microsd-card','Карта памяти · SPI'),
  item('text','Подпись','Базовые',null,'Текст на схеме'),
@@ -76,4 +83,4 @@ export const catalogIcons = {
  ds18:'thermometer',bmp:'gauge',rfid:'scan-line',strip:'ellipsis',meter:'activity',nlsf:'git-branch',nokia:'smartphone',touch:'touchpad',sh1107:'monitor',max7219:'grid-3x3',tm1637:'binary',epaper:'tablet',pal:'tv',a4988:'settings-2',
  not:'chevrons-left-right',and:'merge',or:'split',xor:'shuffle',nand:'git-pull-request-arrow',mux:'list-filter','flip-flop-d':'repeat-2','flip-flop-dsr':'repeat','74hc595':'arrow-right-to-line','74hc165':'arrow-left-to-line',clock:'activity',relay:'toggle-right',breadboard:'grip',analyzer:'chart-no-axes-combined',text:'type'
 };
-export const catalogOrder=['uno','nano','mega','esp32','led','resistor','button','pot','tmp36','ultrasonic','dht','lcd','oled','buzzer','servo','rgb','switch'];
+export const catalogOrder=['uno','nano','mega','esp32','led','resistor','button','pot','tmp36','dc-motor','npn','sn754410','l293d','battery9','diode','capacitor','breadboard','ultrasonic','dht','lcd','oled','buzzer','servo','rgb','switch'];

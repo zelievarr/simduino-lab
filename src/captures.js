@@ -20,17 +20,17 @@ function canvasBlob(canvas) {
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(Error('Не удалось создать PNG.')), 'image/png'));
 }
 
-async function saveAndCopyCanvas(canvas, filename) {
-  const blob = await canvasBlob(canvas);
-  downloadBlob(blob, filename);
-  let copied = false;
-  try {
-    if (navigator.clipboard?.write && typeof ClipboardItem !== 'undefined') {
+async function outputCapture(blob, filename, mode) {
+  if (mode === 'copy') {
+    try {
+      if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') throw Error();
       await navigator.clipboard.write([new ClipboardItem({'image/png': blob})]);
-      copied = true;
+    } catch {
+      throw Error('Браузер не разрешил копирование PNG. Попробуйте режим «Скачать PNG» в настройках снимков.');
     }
-  } catch {}
-  return {copied};
+  } else {
+    downloadBlob(await blob, filename);
+  }
 }
 
 function addWatermark(ctx, width, height) {
@@ -43,29 +43,6 @@ function addWatermark(ctx, width, height) {
   ctx.fillStyle = '#ffffff66';
   ctx.fillText(WATERMARK, width - 18, height - 16);
   ctx.restore();
-}
-
-function stylesheetText() {
-  return [...document.styleSheets].map(sheet => {
-    try { return [...sheet.cssRules].map(rule => rule.cssText).join('\n'); }
-    catch { return ''; }
-  }).join('\n');
-}
-
-function flattenComponentShadows(source, clone) {
-  const sources = [...source.querySelectorAll('*')].filter(el => el.shadowRoot?.querySelector('svg'));
-  const clones = [...clone.querySelectorAll('*')].filter(el => el.tagName.startsWith('WOKWI-'));
-  sources.forEach((component, index) => {
-    const target = clones[index];
-    if (!target) return;
-    const svg = component.shadowRoot.querySelector('svg').cloneNode(true);
-    const holder = document.createElement('div');
-    holder.style.cssText = `display:block;width:${component.offsetWidth}px;height:${component.offsetHeight}px;overflow:visible`;
-    svg.setAttribute('width', '100%');
-    svg.setAttribute('height', '100%');
-    holder.append(svg);
-    target.replaceWith(holder);
-  });
 }
 
 function imageFromSvg(svgText) {
@@ -96,7 +73,14 @@ async function drawSvgElement(ctx, svg, x, y, width, height) {
   ctx.drawImage(image, x, y, width, height);
 }
 
-export async function captureCircuit(element, projectName) {
+export function captureCircuit(element, projectName, mode = 'download') {
+  const blob = renderCircuit(element);
+  // Start clipboard.write during the click, before asynchronous SVG rasterization.
+  blob.catch(() => {});
+  return outputCapture(blob, captureFilename(projectName, 'scheme'), mode);
+}
+
+async function renderCircuit(element) {
   const rect = element.getBoundingClientRect();
   if (rect.width < 1 || rect.height < 1) throw Error('Окно схемы сейчас не видно.');
   const ratio = Math.min(2, window.devicePixelRatio || 1.5);
@@ -146,7 +130,7 @@ export async function captureCircuit(element, projectName) {
   const shade = ctx.createRadialGradient(rect.width / 2, rect.height / 2, Math.min(rect.width, rect.height) * .25, rect.width / 2, rect.height / 2, Math.max(rect.width, rect.height) * .72);
   shade.addColorStop(0, '#00000000');shade.addColorStop(1, '#10171a35');ctx.fillStyle = shade;ctx.fillRect(0, 0, rect.width, rect.height);
   addWatermark(ctx, rect.width, rect.height);
-  return saveAndCopyCanvas(canvas, captureFilename(projectName, 'scheme'));
+  return canvasBlob(canvas);
 }
 
 export function tokenizeCodeLine(line) {
@@ -165,7 +149,7 @@ export function tokenizeCodeLine(line) {
   return pieces;
 }
 
-export async function captureCode(code, projectName) {
+export async function captureCode(code, projectName, mode = 'download') {
   const lines = String(code).replace(/\t/g, '  ').split('\n');
   const charWidth = 9.6;
   const gutter = 74;
@@ -199,5 +183,5 @@ export async function captureCode(code, projectName) {
     });
   });
   addWatermark(ctx, width, contentHeight);
-  return saveAndCopyCanvas(canvas, captureFilename(projectName, 'code'));
+  return outputCapture(canvasBlob(canvas), captureFilename(projectName, 'code'), mode);
 }

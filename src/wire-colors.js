@@ -3,7 +3,7 @@ export const SIGNAL_WIRE_COLORS=['#d8f65d','#70c8ff','#c999ff','#ffc857','#5fe0c
 export function endpointRole(endpoint=''){
  const pin=String(endpoint).split(':').slice(1).join(':').toUpperCase();
  if(pin.includes('GND'))return'ground';
- if(pin==='5V'||pin==='VCC'||pin==='V+')return'power';
+ if(pin==='5V'||['VCC','VCC1','VCC2'].includes(pin)||pin==='V+')return'power';
  return'signal';
 }
 

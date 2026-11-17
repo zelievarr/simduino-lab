@@ -33,3 +33,19 @@ test('logic output drives Arduino digitalRead',async()=>{
  });
  assert.ok(lines.includes('PRESSED'));
 });
+test('PWM drives a 9V motor through NPN and connected breadboard holes',async()=>{
+ const {frames}=await simulate('fade',1.9,p=>{
+  p.parts.push(...[['motor','dc-motor'],['q','npn'],['bat','battery9'],['board','breadboard']].map(([id,type])=>({id,type,attrs:{}})));
+  p.wires=[['uno:9','r1:1'],['r1:2','board:A1'],['board:E1','q:B'],['q:C','motor:-'],['q:E','board:-1.1'],['bat:GND','board:-1.2'],['uno:GND.1','board:-1.3'],['bat:V+','motor:+']].map(([from,to])=>({from,to}));
+ });
+ assert.ok(frames.some(f=>f.seconds<.15&&f.outputs.motor.motorSpeed<.1));
+ assert.ok(frames.some(f=>f.seconds>1.5&&f.outputs.motor.motorSpeed>.6));
+});
+test('SN754410 drives two motors independently with signed direction',async()=>{
+ const {frames}=await simulate('blink',1.3,p=>{
+  p.parts.push(...[['m1','dc-motor'],['m2','dc-motor'],['chip','sn754410'],['bat','battery9']].map(([id,type])=>({id,type,attrs:{}})));
+  p.wires=[['uno:5V','chip:VCC1'],['bat:V+','chip:VCC2'],['bat:GND','uno:GND.1'],['chip:GND.13','uno:GND.1'],['uno:5V','chip:1,2EN'],['uno:13','chip:3,4EN'],['uno:13','chip:1A'],['uno:GND.1','chip:2A'],['uno:GND.1','chip:3A'],['uno:5V','chip:4A'],['chip:1Y','m1:+'],['chip:2Y','m1:-'],['chip:3Y','m2:+'],['chip:4Y','m2:-']].map(([from,to])=>({from,to}));
+ });
+ assert.ok(frames.some(f=>f.outputs.m1.motorSpeed===1&&f.outputs.m2.motorSpeed===-1));
+ assert.ok(frames.some(f=>f.seconds>1.1&&f.outputs.m1.motorSpeed===0&&f.outputs.m2.motorSpeed===0));
+});

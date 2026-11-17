@@ -6,13 +6,13 @@ class TMP36Element extends HTMLElement{
   const root=this.attachShadow({mode:'open'});root.innerHTML=`<style>
    :host{display:inline-block;width:64px;height:142px;color:#dfe7e3;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;user-select:none}
    .sensor{position:relative;width:64px;height:72px}
-   .body{position:absolute;left:9px;top:2px;width:46px;height:49px;border-radius:24px 24px 8px 8px;background:linear-gradient(110deg,#374148,#171d21 58%,#0d1114);border:1px solid #66737a;box-shadow:inset 5px 0 9px #ffffff12,0 6px 10px #0007}
-   .body:after{content:'';position:absolute;left:7px;top:6px;width:9px;height:25px;border-radius:50%;background:linear-gradient(90deg,#ffffff20,transparent)}
-   .name{position:absolute;inset:19px 0 auto;text-align:center;font-size:9px;font-weight:800;letter-spacing:.4px;color:#e8ecea}.reading{position:absolute;inset:31px 0 auto;text-align:center;font-size:8px;color:#9fd6b0}
-   .leg{position:absolute;top:50px;width:2px;height:18px;background:linear-gradient(90deg,#859090,#d7dddd,#6e797a);border-radius:1px}.vcc{left:11px;transform:rotate(5deg);transform-origin:top}.out{left:31px}.gnd{left:51px;transform:rotate(-5deg);transform-origin:top}
-   .pins{position:absolute;top:68px;left:0;right:0;display:flex;justify-content:space-between;padding:0 2px;color:#7f918b;font-size:7px}.pins span{width:20px;text-align:center}
    input{position:absolute;left:-20px;top:104px;width:104px;height:26px;margin:0;accent-color:#d1f76b;cursor:pointer;touch-action:none}
-  </style><div class="sensor"><div class="body"><span class="name">TMP36</span><span class="reading">25 °C</span></div><i class="leg vcc"></i><i class="leg out"></i><i class="leg gnd"></i><div class="pins"><span>+Vs</span><span>OUT</span><span>GND</span></div><input aria-label="Температура TMP36" type="range" min="-40" max="125" value="25"></div>`;
+  </style><div class="sensor"><svg width="64" height="142" viewBox="0 0 64 142" style="display:block">
+  <path d="M12 48v18m20-18v18m20-18v18" stroke="#bac4c3" stroke-width="2"/>
+  <path d="M9 43V25a23 23 0 0 1 46 0v18q0 8-8 8H17q-8 0-8-8Z" fill="#232d31" stroke="#839295"/>
+  <g text-anchor="middle" font-family="monospace"><text x="32" y="29" fill="#e8ecea" font-size="9" font-weight="800">TMP36</text>
+  <text class="reading" x="32" y="41" fill="#9fd6b0" font-size="8">25 °C</text>
+  <text y="77" font-size="7" fill="#a1b1aa"><tspan x="12">+Vs</tspan><tspan x="32">OUT</tspan><tspan x="52">GND</tspan></text></g></svg><input aria-label="Температура TMP36" type="range" min="-40" max="125" value="25"></div>`;
   this._range=root.querySelector('input');this._reading=root.querySelector('.reading');
   this._range.addEventListener('pointerdown',event=>event.stopPropagation());
   this._range.addEventListener('input',()=>{this._value=Number(this._range.value);this._paint();this.dispatchEvent(new InputEvent('input',{bubbles:true,composed:true}));});
