@@ -8,3 +8,9 @@ test('direct power short is rejected',()=>{const p=makeProject();p.wires.push({f
 test('resistor conducts but is not treated as a direct short',()=>{const p=makeProject();p.wires=[{from:'uno:5V',to:'r1:1'},{from:'r1:2',to:'uno:GND.1'}];assert.doesNotThrow(()=>validateCircuit(p));assert.equal(buildNets(p.parts,p.wires).same('uno:5V','uno:GND.1'),true);});
 test('new project starts with an Uno and an empty circuit',()=>{const p=makeBlankProject('Лаба 1');assert.equal(p.name,'Лаба 1');assert.deepEqual(p.parts.map(part=>part.type),['uno']);assert.deepEqual(p.wires,[]);assert.match(p.code,/void setup\(\)/);assert.doesNotThrow(()=>validateCircuit(p));});
 test('reject malformed Intel HEX and accept valid bytes',()=>{assert.throws(()=>loadHex(':0100000000FE\n:00000001FF'),/контрольная/);assert.throws(()=>loadHex('not a hex file'));assert.deepEqual([...loadHex(':020000000000FE\n:00000001FF').slice(0,1)],[0]);});
+
+test('A3144 pull-up resistor does not short its open collector to 5V',()=>{
+ const parts=[{id:'uno',type:'uno'},{id:'hall',type:'a3144'},{id:'r',type:'resistor'}];
+ const nets=buildNets(parts,[{from:'hall:OUT',to:'r:1'},{from:'uno:5V',to:'r:2'}]);
+ assert.equal(nets.same('hall:OUT','uno:5V'),false);
+});

@@ -9,13 +9,14 @@ let pins=Array(20).fill(0),integrals=Array(20).fill(0),edges=Array(20).fill(0),r
 const locate=n=>n<8?[ports.d,n]:n<14?[ports.b,n-8]:[ports.c,n-14];
 const pinNumber=name=>/^\d+$/.test(name)?Number(name):/^A[0-5]/.test(name)?14+Number(name[1]):null;
 let pinNets=[],partNets={},gnd,vcc,v33,applyingInputs=false;
+let sensorStates=new Map();
 let logicParts=[],batteries=[],drivers=new Map();
 function rebuild(){
  net=buildNets(project.parts,project.wires,inputs);const uno=project.parts.find(p=>p.type==='uno').id;
  pinNets=Array.from({length:20},(_,i)=>net.root(`${uno}:${i<14?i:'A'+(i-14)}`));
  gnd=net.root(`${uno}:GND.1`);vcc=net.root(`${uno}:5V`);v33=net.root(`${uno}:3.3V`);
  logicParts=project.parts.filter(p=>logicTypes.includes(p.type));
- partNets={};for(const p of project.parts)partNets[p.id]=Object.fromEntries(['A','C','R','G','B','COM','1','2','SIG','OUT','VCC','V+','GND','PWM','S','Y','+','-','E',...bridgePins].map(pin=>[pin,net.root(`${p.id}:${pin}`)]));
+ partNets={};for(const p of project.parts)partNets[p.id]=Object.fromEntries(['A','C','R','G','B','COM','1','2','SIG','OUT','VCC','V+','GND','PWM','S','Y','NC','TRIG','ECHO','+','-','E',...bridgePins].map(pin=>[pin,net.root(`${p.id}:${pin}`)]));
  batteries=project.parts.filter(p=>p.type==='battery9').map(p=>partNets[p.id]);
  drivers=new Map();
  for(const part of project.parts){
@@ -30,6 +31,11 @@ function netVoltage(root,averages=null,visiting=new Set(),cache=new Map()){
  if(visiting.has(root))return null;
  if(root===gnd)return 0;if(root===vcc)return 5;if(root===v33)return 3.3;
  if(batteries.some(p=>p['V+']===root&&p.GND===gnd))return 9;
+ for(const part of project.parts){
+  const p=partNets[part.id];
+  if(part.type==='ultrasonic'&&p.ECHO===root&&p.VCC===vcc&&p.GND===gnd)return sensorStates.get(part.id)?.echo?5:0;
+  if(part.type==='a3144'&&p.OUT===root&&p.VCC===vcc&&p.GND===gnd&&(inputs[part.id]??part.attrs.value??0))return 0;
+ }
  for(let i=0;i<20;i++)if(pinNets[i]===root){const [p,b]=locate(i),s=p.pinState(b);if(s<2)return (averages?averages[i]:pins[i])*5;}
  for(const part of project.parts){if(part.type==='pot'||part.type==='slidepot'){const p=partNets[part.id];if(p.SIG===root&&p.VCC===vcc&&p.GND===gnd)return (inputs[part.id]??part.attrs.value??512)/1023*5;}}
  for(const part of project.parts){if(part.type==='tmp36'){const p=partNets[part.id];if(p.OUT===root&&p.VCC===vcc&&p.GND===gnd)return tmp36Voltage(inputs[part.id]??part.attrs.value??25);}}
@@ -37,6 +43,12 @@ function netVoltage(root,averages=null,visiting=new Set(),cache=new Map()){
  if(drivers.has(root)){
   const next=new Set(visiting);next.add(root);
   return drivenTerminal(root,pin=>netVoltage(pin,averages,next,cache))?.voltage??null;
+ }
+ for(const hall of project.parts.filter(p=>p.type==='a3144'))if(partNets[hall.id].OUT===root){
+  for(const r of project.parts.filter(p=>p.type==='resistor')){
+   const a=partNets[r.id]['1'],b=partNets[r.id]['2'];
+   if((a===root&&b===vcc)||(b===root&&a===vcc))return 5;
+  }
  }
  for(let i=0;i<20;i++)if(pinNets[i]===root&&locate(i)[0].pinState(locate(i)[1])===3)return 5;
  return null;
@@ -56,10 +68,30 @@ function motorTerminal(root,avg){
  const value=netVoltage(root,avg);
  return value===null?null:{voltage:value,duty:1};
 }
+function updateUltrasonic(){
+ for(const part of project.parts.filter(p=>p.type==='ultrasonic')){
+  const p=partNets[part.id];
+  let state=sensorStates.get(part.id);
+  if(!state){state={trigger:false,echo:false,busy:false,rise:0};sensorStates.set(part.id,state);}
+  if(p.VCC!==vcc||p.GND!==gnd){state.trigger=false;state.echo=false;continue;}
+  const trigger=(netVoltage(p.TRIG)??0)>=2.5;
+  if(trigger&&!state.trigger)state.rise=cpu.cycles;
+  if(!trigger&&state.trigger&&cpu.cycles-state.rise>=160&&!state.busy){
+   state.busy=true;
+   const cm=Math.max(2,Math.min(400,Number(inputs[part.id]??part.attrs.value??100)));
+   cpu.addClockEvent(()=>{
+    state.echo=true;applyInputs();
+    cpu.addClockEvent(()=>{state.echo=false;state.busy=false;applyInputs();},Math.round(cm*58*16));
+   },200*16);
+  }
+  state.trigger=trigger;
+ }
+}
 function applyInputs(){
  if(!adc||applyingInputs)return;
  applyingInputs=true;
  try{
+ updateUltrasonic();
  for(let i=0;i<20;i++){const[p,b]=locate(i);if(p.pinState(b)>=2){const v=netVoltage(pinNets[i]);p.setPin(b,v===null?p.pinState(b)===3:v>=2.5);}}
  for(let i=0;i<6;i++)adc.channelValues[i]=netVoltage(pinNets[i+14])??0;
  }finally{applyingInputs=false;}
@@ -84,7 +116,7 @@ function frame(){
   if(part.type==='led')outputs[part.id]={brightness:Math.max(0,((volts('A')??0)-(volts('C')??5))/5)};
   if(part.type==='rgb')outputs[part.id]={rgb:['R','G','B'].map(c=>Math.max(0,((volts(c)??0)-(volts('COM')??5))/5))};
   if(part.type==='servo'){const i=pinNets.indexOf(p.PWM);outputs[part.id]={angle:p['V+']===vcc&&p.GND===gnd&&i>=0?Math.max(0,Math.min(180,(width[i]/16-544)/1856*180)):0};}
-  if(part.type==='buzzer'){const i=pinNets.indexOf(p['2']);outputs[part.id]={frequency:p['1']===gnd&&i>=0&&period[i]>0&&cpu.cycles-rise[i]<1600000?16000000/period[i]:0};}
+  if(part.type==='buzzer'||part.type==='ky-006'){const i=pinNets.indexOf(p[part.type==='buzzer'?'2':'S']);outputs[part.id]={frequency:p[part.type==='buzzer'?'1':'GND']===gnd&&i>=0&&period[i]>0&&cpu.cycles-rise[i]<1600000?16000000/period[i]:0};}
  }
  postMessage({type:'frame',outputs,pins:avg,seconds:cpu.cycles/16000000});
  timer=setTimeout(frame,Math.max(0,(cpu.cycles/16000)-(performance.now()-started)));
@@ -92,7 +124,7 @@ function frame(){
 self.onmessage=({data})=>{
  try {
  if(data.type==='start'){
-  project=data.project;inputs=data.inputs??{};cpu=new CPU(loadHex(data.hex));
+  sensorStates=new Map();project=data.project;inputs=data.inputs??{};cpu=new CPU(loadHex(data.hex));
   new AVRTimer(cpu,timer0Config);new AVRTimer(cpu,timer1Config);new AVRTimer(cpu,timer2Config);
   new AVREEPROM(cpu,new EEPROMMemoryBackend(1024));
   ports={b:new AVRIOPort(cpu,portBConfig),c:new AVRIOPort(cpu,portCConfig),d:new AVRIOPort(cpu,portDConfig)};

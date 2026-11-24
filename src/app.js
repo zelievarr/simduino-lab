@@ -1,5 +1,6 @@
 import '@wokwi/elements';
 import './tmp36-element.js';
+import './classroom-sensors.js';
 import './motor-elements.js';
 import './logic-elements.js';
 import {EditorView,keymap,lineNumbers,highlightActiveLine,drawSelection,highlightActiveLineGutter} from '@codemirror/view';
@@ -80,14 +81,14 @@ async function renderParts(){
   await el.updateComplete;wrapper.style.width=el.getBoundingClientRect().width/zoom+'px';wrapper.style.height=el.getBoundingClientRect().height/zoom+'px';
   wrapper.querySelector('.pins').innerHTML=(el.pinInfo||[]).map(pin=>`<button class="pin" style="left:${pin.x*scale}px;top:${pin.y*scale}px" data-pin="${part.id}:${esc(pin.name)}" title="${esc(part.id+' · '+pin.name)}" aria-label="Вывод ${esc(part.id+' '+pin.name)}"></button>`).join('');
   if(['button','button6'].includes(part.type)){el.addEventListener('button-press',()=>input(part.id,1));el.addEventListener('button-release',()=>input(part.id,0));}
-  if(['pot','slidepot','switch','tmp36'].includes(part.type))el.addEventListener('input',()=>{part.attrs.value=el.value;input(part.id,el.value);if(part.type==='tmp36'&&selected===part.id)selectPart(part.id);saveSoon();});
+  if(['pot','slidepot','switch','tmp36','a3144','ultrasonic'].includes(part.type))el.addEventListener('input',()=>{part.attrs.value=el.value;input(part.id,el.value);if(part.type==='tmp36'&&selected===part.id)selectPart(part.id);saveSoon();});
   if(part.type==='uno')el.addEventListener('button-press',()=>{if(running){stop();run();}});
  }
  drawWires();refreshMeta();selectParts(selectedIds);$('#world').classList.toggle('wire-mode',mode==='wire');
 }
 function input(id,value){inputs[id]=value;worker?.postMessage({type:'input',id,value});}
 function point(endpoint){const[id,name]=endpoint.split(':'),part=project.parts.find(p=>p.id===id),el=elements.get(id),pin=el?.pinInfo?.find(p=>p.name===name);if(!part||!pin)return null;return{x:part.x+pin.x*deviceScale(part),y:part.y+pin.y*deviceScale(part),partId:id,side:['led','rgb','tmp36'].includes(part.type)?'bottom':null};}
-function routingBoxes(){return project.parts.map(p=>{const el=elements.get(p.id)?.closest('.part');return{id:p.id,x:p.x,y:p.y,w:parseFloat(el?.style.width)||40,h:p.type==='tmp36'?78*deviceScale(p):parseFloat(el?.style.height)||40};});}
+function routingBoxes(){return project.parts.map(p=>{const el=elements.get(p.id)?.closest('.part');return{id:p.id,x:p.x,y:p.y,w:parseFloat(el?.style.width)||40,h:['tmp36','a3144','ultrasonic'].includes(p.type)?({tmp36:78,a3144:98,ultrasonic:112}[p.type])*deviceScale(p):parseFloat(el?.style.height)||40};});}
 function pathBetween(a,b,boxes=routingBoxes()){return pointsToPath(routeWire(a,b,boxes));}
 function drawWires(){
  const boxes=routingBoxes(),occupied=[];$('#wires').innerHTML=project.wires.map(w=>{const a=point(w.from),b=point(w.to);if(!a||!b)return'';const points=routeWire(a,b,boxes,occupied),path=pointsToPath(points),fallback=`M ${a.x} ${a.y} L ${b.x} ${b.y}`;if(points)occupied.push(...points.slice(1).map((p,i)=>[points[i],p]));return`<g data-wire="${esc(w.id)}" class="${path?'':'route-blocked'}"><title>Нажмите, чтобы изменить провод</title><path class="wire-hit" d="${path||fallback}"/><path class="wire-outline" d="${path||fallback}"/><path class="wire-line" stroke="${w.color}" d="${path||fallback}"/><circle cx="${a.x}" cy="${a.y}" r="3" fill="${w.color}"/><circle cx="${b.x}" cy="${b.y}" r="3" fill="${w.color}"/></g>`;}).join('')+'<path id="draft-wire"/>';if(wireStart&&draftCursor)renderDraft(draftCursor);
@@ -177,7 +178,7 @@ async function run(){
   loadHex(result.hex);const prebuilt=!hexFile&&!compiler&&examples.some(ex=>ex.code===project.code);appendLog(hexFile?'Запуск загруженной прошивки.':prebuilt?'Загружена готовая прошивка примера.':`Сборка завершена · Arduino Uno${result.flashBytes?` · ${result.flashBytes} байт`:''}`,'success');if(result.stdout)appendLog(result.stdout.trim());if(result.stderr?.length)appendLog(result.stderr.join('\n'),'warning');
   seconds=0;serialLines=0;$('#serial-output').innerHTML='';worker=new Worker('./simulator.js',{type:'module'});worker.onmessage=({data})=>{
    if(data.type==='ready'){running=true;paused=false;if(getComputedStyle($('.mobile-view')).display!=='none')showCircuitPane();setRunUI();chime();launchFireworks();showSuccessReaction();toast('Схема ожила','Arduino Uno выполняет вашу прошивку.');appendLog('Эмуляция ATmega328P запущена · 16 MHz','success');}
-   if(data.type==='frame'){seconds=data.seconds;updateAmbient(data.outputs,project.parts);for(const [id,out]of Object.entries(data.outputs)){const el=elements.get(id);if(!el)continue;if('brightness'in out){el.value=out.brightness>.005;el.brightness=out.brightness;el.style.filter=out.brightness>.05?`drop-shadow(0 0 ${10*out.brightness}px ${project.parts.find(p=>p.id===id).attrs.color||'red'})`:'';}if(out.rgb){[el.ledRed,el.ledGreen,el.ledBlue]=out.rgb;}if('motorSpeed'in out)el.motorSpeed=out.motorSpeed;if('logic'in out)el.output=out.logic;if('angle'in out)el.angle=out.angle;if('frequency'in out)setBuzz(id,out.frequency);}
+   if(data.type==='frame'){seconds=data.seconds;updateAmbient(data.outputs,project.parts);for(const [id,out]of Object.entries(data.outputs)){const el=elements.get(id);if(!el)continue;if('brightness'in out){el.value=out.brightness>.005;el.brightness=out.brightness;el.style.filter=out.brightness>.05?`drop-shadow(0 0 ${10*out.brightness}px ${project.parts.find(p=>p.id===id).attrs.color||'red'})`:'';}if(out.rgb){[el.ledRed,el.ledGreen,el.ledBlue]=out.rgb;}if('motorSpeed'in out)el.motorSpeed=out.motorSpeed;if('logic'in out)el.output=out.logic;if('angle'in out)el.angle=out.angle;if('frequency'in out){el.frequency=out.frequency;setBuzz(id,out.frequency);}}
     const uno=elements.get(project.parts.find(p=>p.type==='uno').id);if(uno){uno.ledPower=true;uno.led13=data.pins[13]>.1;}$('#simulation-time').textContent=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${(seconds%60).toFixed(3).padStart(6,'0')}`;
    }if(data.type==='serial')appendSerial(data.line);if(data.type==='error'){stop();showError(data.message);}
   };worker.onerror=e=>{stop();showError(e.message||'Ошибка эмулятора.');};worker.postMessage({type:'start',hex:result.hex,project:structuredClone(project),inputs});
@@ -189,7 +190,7 @@ function setRunUI(){
 }
 function showCircuitPane(){document.body.classList.remove('code-view');$('[data-action="view-circuit"]').classList.add('active');$('[data-action="view-code"]').classList.remove('active');setTimeout(fit,20);}
 function showCodePane(){document.body.classList.add('code-view');$('[data-action="view-code"]').classList.add('active');$('[data-action="view-circuit"]').classList.remove('active');editor.requestMeasure();}
-function stop(){runGeneration++;worker?.terminate();worker=null;running=false;paused=false;compiling=false;$('#run').disabled=false;clearAmbient();silent();elements.forEach(el=>{if('motorSpeed'in el)el.motorSpeed=0;if('output'in el)el.output=0;if('value'in el&&el.tagName==='WOKWI-LED'){el.value=false;el.brightness=0;el.style.filter='';}if('ledRed'in el){el.ledRed=0;el.ledGreen=0;el.ledBlue=0;}if('ledPower'in el)el.ledPower=false;if('led13'in el)el.led13=false;});setRunUI();}
+function stop(){runGeneration++;worker?.terminate();worker=null;running=false;paused=false;compiling=false;$('#run').disabled=false;clearAmbient();silent();elements.forEach(el=>{if('frequency'in el)el.frequency=0;if('motorSpeed'in el)el.motorSpeed=0;if('output'in el)el.output=0;if('value'in el&&el.tagName==='WOKWI-LED'){el.value=false;el.brightness=0;el.style.filter='';}if('ledRed'in el){el.ledRed=0;el.ledGreen=0;el.ledBlue=0;}if('ledPower'in el)el.ledPower=false;if('led13'in el)el.led13=false;});setRunUI();}
 function showError(message){appendLog(message,'error');consolePanel('logs');showCompileError(message);showFailureReaction();toast('Не удалось запустить',message.split('\n').find(s=>s.includes('error:'))||message.slice(0,200),'error');}
 function openDialog(title,content,wide=false){const d=$('#modal');d.className=wide?'wide':'';d.innerHTML=`<div class="dialog-header"><h2>${esc(title)}</h2>${btn('x','close','Закрыть')}</div><div class="dialog-body">${content}</div>`;if(!d.open)d.showModal();refreshIcons();}
 function closeDialog(){$('#modal').close();}

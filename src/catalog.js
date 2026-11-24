@@ -18,7 +18,9 @@ export const catalog = [
  item('tiny','ATtiny85','Платы',null,'AVR · 8 бит'),
  ...['ESP32','ESP32-S2','ESP32-S3','ESP32-C3','ESP32-C5','ESP32-C6','ESP32-C61','ESP32-H2','ESP32-P4','ESP32-S31'].map(name=>item(name.toLowerCase(),name,'Платы',name==='ESP32'?'esp32-devkit-v1':null,'Xtensa / RISC-V')),
  ...['STM32C031','STM32L031','STM32F103C8','Raspberry Pi Pico'].map(name=>item(name.toLowerCase().replaceAll(' ','-'),name,'Платы',null,'ARM Cortex')),
- item('ultrasonic','HC-SR04','Датчики','hc-sr04','Ультразвуковой дальномер'),
+ item('ultrasonic','HC-SR04','Датчики','sim-ultrasonic','Расстояние 2–400 см · TRIG / ECHO',true),
+ item('a3144','Датчик Холла A3144','Датчики','sim-a3144','Магнит · открытый коллектор · INPUT_PULLUP',true),
+ item('ky-006','KY-006 · пассивный зуммер','Звук и моторы','sim-ky-006','tone() · S, NC, GND',true),
  item('dht','DHT22','Датчики','dht22','Температура и влажность'),
  item('rtc','DS1307 RTC','Датчики','ds1307','Часы реального времени · I²C'),
  item('pir','PIR-датчик','Датчики','pir-motion-sensor','Датчик движения'),
@@ -83,4 +85,4 @@ export const catalogIcons = {
  ds18:'thermometer',bmp:'gauge',rfid:'scan-line',strip:'ellipsis',meter:'activity',nlsf:'git-branch',nokia:'smartphone',touch:'touchpad',sh1107:'monitor',max7219:'grid-3x3',tm1637:'binary',epaper:'tablet',pal:'tv',a4988:'settings-2',
  not:'chevrons-left-right',and:'merge',or:'split',xor:'shuffle',nand:'git-pull-request-arrow',mux:'list-filter','flip-flop-d':'repeat-2','flip-flop-dsr':'repeat','74hc595':'arrow-right-to-line','74hc165':'arrow-left-to-line',clock:'activity',relay:'toggle-right',breadboard:'grip',analyzer:'chart-no-axes-combined',text:'type'
 };
-export const catalogOrder=['uno','nano','mega','esp32','led','resistor','button','pot','tmp36','dc-motor','npn','sn754410','l293d','battery9','diode','capacitor','breadboard','ultrasonic','dht','lcd','oled','buzzer','servo','rgb','switch'];
+export const catalogOrder=['uno','nano','mega','esp32','led','resistor','button','pot','tmp36','dc-motor','npn','sn754410','l293d','battery9','diode','capacitor','breadboard','ultrasonic','a3144','ky-006','dht','lcd','oled','buzzer','servo','rgb','switch'];

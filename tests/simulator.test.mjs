@@ -49,3 +49,40 @@ test('SN754410 drives two motors independently with signed direction',async()=>{
  assert.ok(frames.some(f=>f.outputs.m1.motorSpeed===1&&f.outputs.m2.motorSpeed===-1));
  assert.ok(frames.some(f=>f.seconds>1.1&&f.outputs.m1.motorSpeed===0&&f.outputs.m2.motorSpeed===0));
 });
+test('KY-006 receives tone frequency on S with its middle pin unused',async()=>{
+ const {frames}=await simulate('tone',.7,p=>{
+  p.parts.find(x=>x.id==='bz').type='ky-006';
+  p.wires.forEach(w=>{w.from=w.from.replace('bz:1','bz:GND').replace('bz:2','bz:S');w.to=w.to.replace('bz:1','bz:GND').replace('bz:2','bz:S');});
+ });
+ assert.ok(frames.some(f=>Math.abs(f.outputs.bz.frequency-523)<8));
+ assert.ok(frames.some(f=>Math.abs(f.outputs.bz.frequency-784)<8));
+});
+for(const magnet of [0,1])test('A3144 open collector with INPUT_PULLUP, magnet '+magnet,async()=>{
+ const {lines}=await simulate('button',.3,p=>{
+  p.parts=p.parts.filter(x=>x.id!=='btn');p.parts.push({id:'hall',type:'a3144',attrs:{value:magnet}});
+  p.wires=p.wires.filter(w=>!w.from.startsWith('btn:'));
+  p.wires.push(...[['hall:OUT','uno:2'],['hall:VCC','uno:5V'],['hall:GND','uno:GND.1']].map(([from,to])=>({from,to})));
+ });
+ assert.ok(lines.includes(magnet?'PRESSED':'RELEASED'),JSON.stringify(lines));
+});
+test('HC-SR04 creates a timed echo from an AVR trigger and digitalRead sees it',async()=>{
+ const instructions=[0xe202,0xb904,0xe002,0xb905,...Array(200).fill(0),0xe000,0xb905,0xb103,0x7001,...Array(5).fill(0x0f00),0xb905,0xcff7];
+ const bytes=instructions.flatMap(w=>[w&255,w>>8]);let hex='';
+ for(let i=0;i<bytes.length;i+=16){
+  const row=[Math.min(16,bytes.length-i),i>>8,i&255,0,...bytes.slice(i,i+16)];
+  row.push((-row.reduce((a,b)=>a+b,0))&255);hex+=':'+row.map(v=>v.toString(16).padStart(2,'0')).join('')+'\n';
+ }
+ hex+=':00000001FF';
+ const p={parts:[{id:'uno',type:'uno',attrs:{}},{id:'sensor',type:'ultrasonic',attrs:{value:400}},{id:'led',type:'led',attrs:{}}],wires:[['uno:9','sensor:TRIG'],['sensor:ECHO','uno:8'],['sensor:VCC','uno:5V'],['sensor:GND','uno:GND.1'],['uno:13','led:A'],['led:C','uno:GND.1']].map(([from,to])=>({from,to}))};
+ const worker=new Worker(new URL('./worker-harness.mjs',import.meta.url));const frames=[];
+ try{
+  await new Promise((resolve,reject)=>{
+   const timeout=setTimeout(()=>reject(Error('echo timeout')),5000);
+   worker.on('error',reject);worker.on('message',d=>{if(d.type==='error'){clearTimeout(timeout);reject(Error(d.message));}
+    if(d.type==='frame'){frames.push(d);if(d.seconds>.06){clearTimeout(timeout);resolve();}}});
+   worker.postMessage({type:'start',project:p,hex});
+  });
+  assert.ok(frames.some(f=>f.outputs.led.brightness>.8));
+  assert.ok(frames.some(f=>f.seconds>.04&&f.outputs.led.brightness===0));
+ }finally{await worker.terminate();}
+});

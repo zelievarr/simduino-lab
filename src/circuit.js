@@ -10,9 +10,15 @@ export function buildNets(parts,wires,inputs={}) {
    if(p.type==='uno'){j('GND.1','GND.2');j('GND.1','GND.3');j('A4','A4.2');j('A5','A5.2');}
    if(p.type==='breadboard')for(const [first,...rest] of breadboardGroups())for(const pin of rest)j(first,pin);
    if(bridgeTypes.includes(p.type))for(const pin of ['GND.5','GND.12','GND.13'])j('GND.4',pin);
-   if(p.type==='resistor')j('1','2');
+
    if(p.type==='button'||p.type==='button6'){j('1.l','1.r');j('2.l','2.r');if(inputs[p.id])j('1.l','2.l');}
    if(p.type==='switch')j('2',inputs[p.id]?'3':'1');
+ }
+ // Keep A3144 pull-up resistors separate from its open-collector output.
+ const hallOutputs=new Set(parts.filter(p=>p.type==='a3144').map(p=>root(p.id+':OUT')));
+ for(const p of parts.filter(p=>p.type==='resistor')){
+  const a=root(p.id+':1'),b=root(p.id+':2');
+  if(!hallOutputs.has(a)&&!hallOutputs.has(b))join(p.id+':1',p.id+':2');
  }
  return { root, same:(a,b)=>root(a)===root(b), members:k=>[...parent.keys()].filter(x=>root(x)===root(k)) };
 }
